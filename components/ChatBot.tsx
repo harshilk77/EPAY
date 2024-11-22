@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
 
@@ -8,61 +8,57 @@ interface Message {
 }
 
 const ChatBot: React.FC = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false); // Add loading state
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const toggleChat = (): void => {
+  const toggleChat = () => {
     setIsOpen(!isOpen);
   };
 
-  const sendMessage = async (e: FormEvent): Promise<void> => {
+  const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!input.trim()) return;
 
-    // Add user message to the state
-    const newMessage: Message = { role: "user", content: input };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-
-    setLoading(true); // Set loading to true
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { role: "user", content: input },
+    ]);
+    setLoading(true);
 
     try {
-      // Send user message to the API
-      const response = await axios.post(
-        "https://chat-gpt26.p.rapidapi.com/",
-        {
-          model: "gpt-3.5-turbo",
-          messages: [...messages, newMessage],
+      const options = {
+        method: "GET",
+        url: "https://free-chatgpt-api.p.rapidapi.com/chat-completion-one",
+        params: { prompt: input },
+        headers: {
+          "x-rapidapi-key": "5b3f00853emshd2b157741e7b0bep146ae8jsn3960d3ec0849",
+          "x-rapidapi-host": "free-chatgpt-api.p.rapidapi.com",
         },
-        {
-          headers: {
-            "x-rapidapi-key": "5b3f00853emshd2b157741e7b0bep146ae8jsn3960d3ec0849",
-            "x-rapidapi-host": "chat-gpt26.p.rapidapi.com",
-            "Content-Type": "application/json",
-          }
-        }
-      );
-
-      // Get the bot's response
-      const botReply: Message = {
-        role: "assistant",
-        content: response.data.choices[0].message.content,
       };
 
-      // Add bot's reply to the state
-      setMessages((prevMessages) => [...prevMessages, botReply]);
-    } catch (error) {
-      console.error("Error sending message", error);
-    } finally {
-      setLoading(false); // Set loading to false
-    }
+      const response = await axios.request(options);
 
-    setInput(""); // Clear input after sending
+      if (response.data) {
+        const botReply: Message = {
+          role: "assistant",
+          content: response.data.response, // Adjust if `response` is nested
+        };
+        setMessages((prevMessages) => [...prevMessages, botReply]);
+      } else {
+        console.error("Unexpected API response structure:", response.data);
+      }
+    } catch (error: any) {
+      console.error("Error sending message:", error.message);
+    } finally {
+      setLoading(false);
+      setInput("");
+    }
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
   };
 
